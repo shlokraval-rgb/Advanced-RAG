@@ -1,0 +1,28 @@
+# Secrets
+.env
+
+# Generated data (re-created by scripts/ingest.py)
+data/index/
+data/processed/
+
+# Evaluation outputs
+eval/results/
+
+# Python caches / environments / temp files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+*.egg-info/
+.cache/
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Original source PDFs - keep local
+data/raw/

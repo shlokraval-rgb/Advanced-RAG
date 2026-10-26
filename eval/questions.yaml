@@ -1,0 +1,172 @@
+# Evaluation set.
+# Official sample questions come from the assignment document (RAG-Hands-On-Use-Cases.docx).
+# Negative questions check that the system says "not found" instead of inventing an answer.
+#
+# Fields
+#   gold_pages    PDF pages where the answer is (checked against retrieved chunks and answer citations)
+#   must_contain  list of groups; EVERY group must match; a group matches if ANY of its strings appears
+#                 (case-insensitive) - in the retrieved context (offline) and in the answer (online)
+#   must_not_contain  answer is wrong if it contains any of these (e.g. a date attached to the wrong event)
+#   must_not_match    same idea with regular expressions, checked sentence by sentence
+#   expect_meta   metadata every retrieved chunk should have (section-aware retrieval check)
+#   negative      true -> correct behaviour is "I could not find this information in the document."
+
+# ---------------------------------------------------------------- USE CASE 1: GPO
+- id: gpo-1
+  doc: gpo
+  official: true
+  question: How many depository libraries did GPO staff visit in FY 2018?
+  gold_pages: [5, 21]
+  must_contain: [["166"]]
+
+- id: gpo-2
+  doc: gpo
+  official: true
+  question: What new digital system replaced FDsys, and when was it fully deployed?
+  gold_pages: [4, 8, 10, 22]
+  # p. 4: full-scale deployment of govinfo happened during FY 2018; FDsys was to be RETIRED in December 2018.
+  must_contain: [["govinfo"], ["FY 2018", "fiscal year 2018", "FY2018"], ["December 2018"]]
+  must_not_contain: ["deployed in December 2018", "deployment in December 2018", "deployed by December 2018"]
+  # any sentence that links govinfo's deployment to December 2018 (unless it is about FDsys's retirement)
+  must_not_match: ['^(?!.*retir).*deploy.*December 2018', '^(?!.*retir).*December 2018.*deploy']
+
+- id: gpo-3
+  doc: gpo
+  official: true
+  question: How much did GPO procure in printing and information products in FY 2018 on behalf of federal agencies?
+  gold_pages: [5, 14, 17]
+  must_contain: [["375"]]
+
+- id: gpo-neg-1
+  doc: gpo
+  negative: true
+  question: How many passports did GPO produce in FY 2021?
+
+- id: gpo-neg-2
+  doc: gpo
+  negative: true
+  question: What is GPO's policy on remote work for its employees?
+
+# ---------------------------------------------------------------- USE CASE 2: WORLD BANK GEP
+- id: gep-1
+  doc: gep
+  official: true
+  question: What is the growth outlook for South Asia in this report?
+  gold_pages: [96, 97, 98]
+  # p. 96: 6.3 percent in 2026, then about 7 percent per year on average in 2027-28
+  must_contain: [["6.3"], ["7 percent", "7%", "7.0 percent"], ["2027"]]
+  expect_meta: {region: South Asia}
+
+- id: gep-2
+  doc: gep
+  official: true
+  question: What does Chapter 3 say about sovereign debt in developing economies?
+  gold_pages: [107, 108, 109, 110, 111, 112, 113, 114, 115, 119, 120, 121, 122, 127, 128]
+  must_contain: [["interest rate", "spreads", "yields"], ["debt"]]
+  expect_meta: {chapter_num: 3}
+
+- id: gep-3
+  doc: gep
+  official: true
+  question: According to the executive summary, what are the main risks to the global outlook?
+  gold_pages: [19, 20]
+  # p. 19 lists the risks: escalation of hostilities / disruptions to commodity flows (-> prices, inflation,
+  # financial stress), plus trade policy uncertainty, geopolitical strains and weather-related shocks.
+  # (Earlier this check required the word "downside", which describes the BALANCE of risks, not a risk -
+  # a correct list of the risks failed. Now three separate risk facts are required.)
+  must_contain: [["hostilities", "escalation"], ["commodity"], ["trade policy", "geopolitical", "weather"]]
+  expect_meta: {chapter: Executive Summary}
+
+- id: gep-x1
+  doc: gep
+  question: What is the growth forecast for Sub-Saharan Africa in 2026?
+  gold_pages: [99, 100, 101, 102]
+  must_contain: [["4 percent", "4.0"]]
+  expect_meta: {region: Sub-Saharan Africa}
+
+- id: gep-x2
+  doc: gep
+  question: According to Box 1.1, how could AI affect global growth?
+  gold_pages: [30, 31, 32, 33, 34]
+  must_contain: [["productivity"]]
+  expect_meta: {box_id: "1.1"}
+
+- id: gep-x3
+  doc: gep
+  question: What is India's growth forecast for fiscal year 2026/27?
+  gold_pages: [96, 98]
+  must_contain: [["6.6"]]
+
+- id: gep-neg-1
+  doc: gep
+  negative: true
+  question: What does Chapter 6 say about climate migration?
+
+- id: gep-neg-2
+  doc: gep
+  negative: true
+  question: What is the World Bank's 2026 growth forecast for Antarctica?
+
+# ---------------------------------------------------------------- USE CASE 3: APPLE iMAC
+- id: imac-1
+  doc: imac
+  official: true
+  question: How much less energy does iMac use compared to the ENERGY STAR requirement?
+  gold_pages: [7, 12]
+  must_contain: [["58"]]
+
+- id: imac-2
+  doc: imac
+  official: true
+  question: What is the total carbon footprint of the iMac, and how much of that comes from product use versus manufacturing?
+  gold_pages: [10]
+  must_contain: [["346"], ["45%", "45 percent"], ["50%", "50 percent"]]
+
+- id: imac-3
+  doc: imac
+  official: true
+  question: What material is the iMac stand made from, and what percentage of it is recycled?
+  gold_pages: [1, 2, 4]
+  must_contain: [["aluminum", "aluminium"], ["100"]]
+
+- id: imac-x1
+  doc: imac
+  question: What is the iMac's power consumption in sleep mode at 115V?
+  gold_pages: [12]
+  must_contain: [["0.57"]]
+
+- id: imac-x2
+  doc: imac
+  question: How much recycled content is in the iMac's fiber packaging?
+  gold_pages: [6]
+  must_contain: [["76"]]
+
+- id: imac-x3
+  doc: imac
+  question: What does the recycled content percentage exclude, according to the footnote?
+  gold_pages: [11]
+  must_contain: [["packaging"], ["in-box accessories"]]
+
+- id: imac-x4
+  doc: imac
+  question: According to the carbon emissions chart, what are the iMac's baseline emissions and its final emissions?
+  gold_pages: [2]
+  must_contain: [["445"], ["346"]]
+
+# Trap: the chart does not label segment values -> the system must NOT invent a number.
+- id: imac-neg-1
+  doc: imac
+  negative: true
+  question: In the carbon emissions chart, how many kg of the 445 kg baseline come from transportation?
+  accept_refusals: ["not labelled", "not labeled", "no numeric label", "not stated", "does not label",
+                    "does not provide", "not provided", "not specified", "does not specify", "not given"]
+
+- id: imac-neg-2
+  doc: imac
+  negative: true
+  question: What is the retail price of the iMac?
+
+- id: imac-neg-3
+  doc: imac
+  negative: true
+  question: How much does the iMac weigh?

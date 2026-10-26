@@ -1,0 +1,8 @@
+pymupdf>=1.24        # PDF parsing (text blocks, fonts, positions, bookmarks, page rendering)
+chromadb>=0.5        # local vector database (stored in data/index/)
+httpx>=0.27          # talks to the local Ollama server (free models)
+openai>=1.40         # OPTIONAL: only for the optional paid vision script
+rank-bm25>=0.2.2     # keyword (BM25) search for hybrid retrieval
+python-dotenv>=1.0   # reads the optional .env file
+pyyaml>=6.0          # reads config.yaml and eval/questions.yaml
+pytest>=8.0          # unit tests

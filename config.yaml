@@ -1,0 +1,89 @@
+# ---------------------------------------------------------------------------
+# Advanced-RAG configuration
+# Everything you may want to tweak lives here (no code changes needed).
+# ---------------------------------------------------------------------------
+
+# FREE local models served by Ollama (https://ollama.com) - no API key, no cost.
+# Install once:   ollama pull nomic-embed-text      and      ollama pull qwen2.5:3b
+ollama:
+  base_url: http://localhost:11434
+  embedding_model: nomic-embed-text
+  chat_model: qwen2.5:3b
+  temperature: 0
+  num_ctx: 8192                 # context window given to the chat model (fits the retrieved excerpts)
+  timeout_seconds: 600          # a CPU-only PC can take a while for the first answer
+  embed_batch_size: 32
+  # nomic-embed-text expects these task prefixes (documents vs. questions)
+  document_prefix: "search_document: "
+  query_prefix: "search_query: "
+
+# NOT used by the normal pipeline. Only the OPTIONAL, paid scripts/extract_imac_visuals.py uses this.
+openai:
+  vision_model: gpt-4o
+
+paths:
+  raw_dir: data/raw             # the source PDFs
+  processed_dir: data/processed # chunk files written by ingest (git-ignored)
+  extracted_dir: data/extracted # reviewed extraction artefacts (e.g. iMac vision cache)
+  index_dir: data/index         # ChromaDB vector store (git-ignored)
+
+retrieval:
+  top_k: 6                      # chunks sent to the LLM
+  candidates: 25                # chunks fetched from EACH retriever before fusion
+  rrf_k: 60                     # reciprocal-rank-fusion constant (standard value)
+  max_context_words: 1800       # cap on context size (keeps a small local model fast and focused)
+  # If the best vector similarity is below this, we answer "not found" without calling the LLM.
+  min_similarity: 0.20
+
+documents:
+  gpo:
+    title: "U.S. Government Publishing Office (GPO) 2018 Annual Report"
+    short: GPO
+    file: gpo_2018_annual_report.pdf
+    # The PDF contains two different "documents":
+    narrative_pages: [1, 30]          # magazine-style, two-column narrative report
+    financial_pages: [31, 82]         # formal financial report (Sections I-IV)
+    by_the_numbers_pages: [14, 15]    # "GPO By the Numbers FY 2018" table
+    chunk_words: 220                  # target chunk size (~300 tokens)
+    overlap_paragraphs: 1
+    # Question words -> the report's own words (the report says "full-scale deployment of govinfo",
+    # "successor to our FDsys website").
+    synonyms:
+      fully deployed: [full-scale deployment]
+      replaced: [successor]
+
+  gep:
+    title: "World Bank - Global Economic Prospects, June 2026"
+    short: GEP
+    file: gep_june_2026.pdf
+    chunk_words: 220
+    # Pages that are pure tables (Statistical Annex) - rebuilt row by row.
+    table_pages: [187, 188, 189, 190]
+    # Sections that add noise but no answers. They are NOT indexed.
+    skip_sections:
+      - Summary of Contents
+      - Contents
+      - Acknowledgments
+      - Abbreviations
+      - References
+      - "Global Economic Prospects: Selected Topics, 2015-26"
+      - "Prospects Group: Selected Other Publications on the Global Economy, 2015-26"
+    regions:   # canonical name -> aliases people may use in questions
+      East Asia and Pacific: [east asia and pacific, east asia, eap]
+      Europe and Central Asia: [europe and central asia, central asia, eca]
+      Latin America and the Caribbean: [latin america and the caribbean, latin america, caribbean, lac]
+      "Middle East, North Africa, Afghanistan, and Pakistan": [middle east, north africa, mna, menaap]
+      South Asia: [south asia, sar]
+      Sub-Saharan Africa: [sub-saharan africa, ssa, africa]
+
+  imac:
+    title: "Apple iMac Product Environmental Report (October 2024)"
+    short: iMac
+    file: imac_per_oct2024.pdf
+    chunk_words: 220
+    use_vision_cache: true            # include data/extracted/imac_vision.json if it exists
+    # Words people use in questions vs. words used in the report.
+    # (The report's carbon table says "Production", people usually say "manufacturing".)
+    synonyms:
+      manufacturing: [production]
+      footprint: [greenhouse gas emissions]
